@@ -1,0 +1,91 @@
+# Docker Compose Configuration for PostgreSQL Streaming Replication
+# HIPAA §164.308(a)(7) — Contingency Plan
+#
+# This configuration sets up a primary-standby PostgreSQL replication pair
+# for local development and testing of the disaster recovery system.
+#
+# Usage: docker-compose -f docker-compose.replication.yml up -d
+
+version: '3.8'
+
+services:
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: medsecure-db-primary
+    environment:
+      POSTGRES_DB: medsecure_db
+      POSTGRES_USER: medsecure
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-medsecure_dev_password}
+      POSTGRES_REPLICATION_USER: replication
+      POSTGRES_REPLICATION_PASSWORD: ${DB_REPLICATION_PASSWORD:-replication_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_primary_data:/var/lib/postgresql/data
+      - ./postgresql-replication.conf:/etc/postgresql/postgresql.conf.d/replication.conf:ro
+      - ./init-primary.sql:/docker-entrypoint-initdb.d/01-init-replication.sql:ro
+    command: >
+      postgres
+        -c wal_level=replica
+        -c max_wal_senders=10
+        -c wal_keep_size=1024MB
+        -c archive_mode=on
+        -c archive_command='test ! -f /archive/%f && cp %p /archive/%f'
+        -c max_replication_slots=10
+        -c synchronous_commit=on
+        -c log_replication_commands=on
+        -c ssl=off
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsecure -d medsecure_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medsecure-dr
+
+  postgres-standby:
+    image: postgres:15-alpine
+    container_name: medsecure-db-standby
+    environment:
+      PGUSER: replication
+      PGPASSWORD: ${DB_REPLICATION_PASSWORD:-replication_dev_password}
+    ports:
+      - "5433:5432"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    volumes:
+      - pg_standby_data:/var/lib/postgresql/data
+    command: >
+      bash -c "
+        # Wait for primary to be ready
+        until pg_isready -h postgres-primary -p 5432 -U replication; do
+          echo 'Waiting for primary...'
+          sleep 2
+        done
+
+        # Create base backup from primary if data directory is empty
+        if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+          pg_basebackup -h postgres-primary -p 5432 -U replication -D /var/lib/postgresql/data -Fp -Xs -P -R
+        fi
+
+        # Start PostgreSQL in standby mode
+        postgres
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medsecure -d medsecure_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medsecure-dr
+
+volumes:
+  pg_primary_data:
+    driver: local
+  pg_standby_data:
+    driver: local
+
+networks:
+  medsecure-dr:
+    driver: bridge
