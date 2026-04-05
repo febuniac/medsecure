@@ -2,7 +2,8 @@ const router = require('express').Router();
 const RecordService = require('../services/recordService');
 
 router.get('/patient/:patientId', async (req, res) => {
-  const records = await RecordService.getByPatient(req.params.patientId, req.user);
+  const { page, limit } = req.query;
+  const records = await RecordService.getByPatient(req.params.patientId, req.user, { page, limit });
   res.json(records);
 });
 router.post('/', async (req, res) => {
