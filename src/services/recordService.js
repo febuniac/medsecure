@@ -1,13 +1,23 @@
 const db = require('../models/db');
+const ProviderPatientService = require('./providerPatientService');
 
 class RecordService {
   static async getByPatient(patientId, user) {
+    await ProviderPatientService.verifyAccess(user, patientId);
     return db('medical_records').where({ patient_id: patientId }).orderBy('date', 'desc');
   }
   static async getById(id, user) {
-    return db('medical_records').where({ id }).first();
+    const record = await db('medical_records').where({ id }).first();
+    if (!record) {
+      const error = new Error('Record not found');
+      error.status = 404;
+      throw error;
+    }
+    await ProviderPatientService.verifyAccess(user, record.patient_id);
+    return record;
   }
   static async create(data, user) {
+    await ProviderPatientService.verifyAccess(user, data.patient_id);
     data.created_by = user.id;
     return db('medical_records').insert(data).returning('*');
   }
