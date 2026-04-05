@@ -14,6 +14,7 @@
   "dependencies": {
     "bcrypt": "^5.1.1",
     "express": "^4.18.2",
+    "express-rate-limit": "^8.3.2",
     "fhir": "^4.11.1",
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
