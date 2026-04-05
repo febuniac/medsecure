@@ -26,6 +26,8 @@ app.use('/api/v1/breach-notifications', authMiddleware, require('./api/breachNot
 app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
 app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
 
+app.use('/api/v1/auth', require('./api/auth'));
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 if (process.env.BACKUP_VERIFICATION_ENABLED !== 'false') {
