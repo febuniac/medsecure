@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const { logger } = require('./utils/logger');
+const { validateEnv } = require('./utils/validateEnv');
 const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
 const authMiddleware = require('./middleware/auth');
@@ -8,6 +9,8 @@ const httpsEnforcement = require('./middleware/httpsEnforcement');
 const { scheduleBackupVerification } = require('./services/backupVerificationScheduler');
 const db = require('./models/db');
 const knex = require('knex');
+
+validateEnv();
 
 const app = express();
 app.use(helmet());
