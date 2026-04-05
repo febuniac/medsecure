@@ -20,4 +20,24 @@ function decrypt(data) {
   return decrypted;
 }
 
-module.exports = { encrypt, decrypt };
+function checkHealth() {
+  try {
+    if (!process.env.ENCRYPTION_KEY) {
+      return { healthy: false, reason: 'ENCRYPTION_KEY not configured' };
+    }
+    if (KEY.length !== 32) {
+      return { healthy: false, reason: 'ENCRYPTION_KEY must be 256 bits (32 bytes)' };
+    }
+    const testPlaintext = 'phi-encryption-health-check';
+    const encrypted = encrypt(testPlaintext);
+    const decrypted = decrypt(encrypted);
+    if (decrypted !== testPlaintext) {
+      return { healthy: false, reason: 'Encrypt/decrypt round-trip verification failed' };
+    }
+    return { healthy: true };
+  } catch (err) {
+    return { healthy: false, reason: `Encryption service error: ${err.message}` };
+  }
+}
+
+module.exports = { encrypt, decrypt, checkHealth };
