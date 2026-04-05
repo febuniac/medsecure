@@ -25,6 +25,7 @@ app.use('/api/v1/consent', authMiddleware, require('./api/consent'));
 app.use('/api/v1/breach-notifications', authMiddleware, require('./api/breachNotification'));
 app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
 app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
+app.use('/api/v1/admin', authMiddleware, require('./api/admin'));
 
 app.use('/api/v1/auth', require('./api/auth'));
 
