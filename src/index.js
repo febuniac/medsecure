@@ -4,6 +4,7 @@ const { logger } = require('./utils/logger');
 const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
 const authMiddleware = require('./middleware/auth');
+const { apiLimiter } = require('./middleware/rateLimiter');
 const { scheduleBackupVerification } = require('./services/backupVerificationScheduler');
 const db = require('./models/db');
 const knex = require('knex');
@@ -11,6 +12,7 @@ const knex = require('knex');
 const app = express();
 app.use(helmet());
 app.use(express.json({ limit: '50mb' }));
+app.use(apiLimiter);
 app.use(hipaaAudit);
 app.use(breachDetection);
 
