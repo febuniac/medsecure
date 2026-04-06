@@ -12,6 +12,7 @@ v1Router.use('/provider-assignments', authMiddleware, require('./providerAssignm
 v1Router.use('/breach-notifications', authMiddleware, require('./breachNotification'));
 v1Router.use('/baa-agreements', authMiddleware, require('./baaAgreements'));
 v1Router.use('/backup-verification', authMiddleware, require('./backupVerification'));
+v1Router.use('/image-attachments', authMiddleware, require('./imageAttachments'));
 v1Router.use('/auth', require('./auth'));
 
 module.exports = v1Router;
