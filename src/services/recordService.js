@@ -13,6 +13,8 @@ const MAX_LIMIT = 100;
 
 class RecordService {
   static async getByPatient(patientId, user, { page = DEFAULT_PAGE, limit = DEFAULT_LIMIT } = {}) {
+    await ProviderPatientService.verifyAccess(user, patientId);
+
     const sanitizedPage = Math.max(1, parseInt(page, 10) || DEFAULT_PAGE);
     const sanitizedLimit = Math.min(MAX_LIMIT, Math.max(1, parseInt(limit, 10) || DEFAULT_LIMIT));
     const offset = (sanitizedPage - 1) * sanitizedLimit;
@@ -30,9 +32,10 @@ class RecordService {
     ]);
 
     const total = parseInt(countResult.total, 10);
+    const data = await Promise.all(records.map(record => RecordService._attachImageReferences(record)));
 
     return {
-      data: records,
+      data,
       pagination: {
         page: sanitizedPage,
         limit: sanitizedLimit,
@@ -40,10 +43,6 @@ class RecordService {
         totalPages: Math.ceil(total / sanitizedLimit)
       }
     };
-  static async getByPatient(patientId, user) {
-    await ProviderPatientService.verifyAccess(user, patientId);
-    const records = await db('medical_records').where({ patient_id: patientId }).orderBy('date', 'desc');
-    return Promise.all(records.map(record => RecordService._attachImageReferences(record)));
   }
 
   static async getById(id, user) {

@@ -58,7 +58,10 @@ class PatientService {
   static async getById(id, user) {
     await ProviderPatientService.verifyAccess(user, id);
     const patient = await db('patients').where({ id }).first();
-    if (patient) { patient.ssn = await decrypt(patient.ssn_encrypted); }
+    if (!patient) {
+      throw new AppError(ErrorCodes.PATIENT_NOT_FOUND, 'Patient not found');
+    }
+    patient.ssn = await decrypt(patient.ssn_encrypted);
     return patient;
   }
   static async create(data, user) {

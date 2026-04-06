@@ -3,11 +3,9 @@ const RecordService = require('../services/recordService');
 const { formatErrorResponse } = require('../utils/errorCodes');
 
 router.get('/patient/:patientId', async (req, res) => {
-  const { page, limit } = req.query;
-  const records = await RecordService.getByPatient(req.params.patientId, req.user, { page, limit });
-  res.json(records);
   try {
-    const records = await RecordService.getByPatient(req.params.patientId, req.user);
+    const { page, limit } = req.query;
+    const records = await RecordService.getByPatient(req.params.patientId, req.user, { page, limit });
     res.json(records);
   } catch (err) {
     const { status, body } = formatErrorResponse(err);

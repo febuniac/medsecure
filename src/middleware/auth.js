@@ -1,9 +1,7 @@
 const jwt = require('jsonwebtoken');
-
-const authenticate = (req, res, next) => {
 const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
-module.exports = (req, res, next) => {
+const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json(formatError(ErrorCodes.AUTHENTICATION_REQUIRED, 'Authentication required'));
   try {
