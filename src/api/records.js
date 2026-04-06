@@ -2,6 +2,7 @@ const router = require('express').Router();
 const RecordService = require('../services/recordService');
 const { formatErrorResponse } = require('../utils/errorCodes');
 const { logger } = require('../utils/logger');
+const authMiddleware = require('../middleware/auth');
 
 /**
  * Create a HIPAA-compliant audit log entry for record operations.
@@ -17,7 +18,7 @@ function auditLog(action, { patientId, recordId, userId }) {
   });
 }
 
-router.get('/patient/:patientId', async (req, res) => {
+router.get('/patient/:patientId', authMiddleware, async (req, res) => {
   try {
     const { patientId } = req.params;
     const { page, limit } = req.query;
@@ -29,7 +30,7 @@ router.get('/patient/:patientId', async (req, res) => {
     res.status(status).json(body);
   }
 });
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const record = await RecordService.create(req.body, req.user);
     auditLog('record_create', { patientId: req.body.patient_id, recordId: record.id, userId: req.user?.id });
@@ -39,7 +40,7 @@ router.post('/', async (req, res) => {
     res.status(status).json(body);
   }
 });
-router.get('/patient/:patientId/lab-results', async (req, res) => {
+router.get('/patient/:patientId/lab-results', authMiddleware, async (req, res) => {
   try {
     const { page, limit } = req.query;
     const results = await RecordService.getLabResults(req.params.patientId, req.user, { page, limit });
@@ -49,7 +50,7 @@ router.get('/patient/:patientId/lab-results', async (req, res) => {
     res.status(status).json(body);
   }
 });
-router.get('/:id', async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const record = await RecordService.getById(req.params.id, req.user);
     auditLog('record_access', { patientId: record.patient_id, recordId: record.id, userId: req.user?.id });
