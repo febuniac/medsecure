@@ -26,7 +26,7 @@ class PatientExportService {
       .where({ patient_id: patientId })
       .orderBy('date', 'desc');
 
-    const bundle = this.buildFhirBundle(patient, records, appointments);
+    const bundle = await this.buildFhirBundle(patient, records, appointments);
 
     logger.info({
       type: 'HIPAA_AUDIT',
@@ -44,12 +44,12 @@ class PatientExportService {
    * Build a FHIR R4 Bundle of type "collection" containing the patient resource
    * and associated clinical data.
    */
-  static buildFhirBundle(patient, records, appointments) {
+  static async buildFhirBundle(patient, records, appointments) {
     const entries = [];
 
     entries.push({
       fullUrl: `urn:uuid:${patient.id}`,
-      resource: this.toFhirPatient(patient),
+      resource: await this.toFhirPatient(patient),
     });
 
     for (const record of records) {
@@ -78,7 +78,7 @@ class PatientExportService {
   /**
    * Map internal patient record to FHIR R4 Patient resource.
    */
-  static toFhirPatient(patient) {
+  static async toFhirPatient(patient) {
     const resource = {
       resourceType: 'Patient',
       id: patient.id,
@@ -109,7 +109,7 @@ class PatientExportService {
 
     if (patient.ssn_encrypted) {
       try {
-        const ssn = decrypt(patient.ssn_encrypted);
+        const ssn = await decrypt(patient.ssn_encrypted);
         resource.identifier = [
           {
             system: 'http://hl7.org/fhir/sid/us-ssn',

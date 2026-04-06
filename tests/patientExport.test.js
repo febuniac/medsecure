@@ -11,8 +11,8 @@ jest.mock('../src/models/db', () => {
 });
 
 jest.mock('../src/utils/encryption', () => ({
-  encrypt: jest.fn((text) => `encrypted:${text}`),
-  decrypt: jest.fn((data) => '123-45-6789'),
+  encrypt: jest.fn((text) => Promise.resolve(`encrypted:${text}`)),
+  decrypt: jest.fn((data) => Promise.resolve('123-45-6789')),
 }));
 
 jest.mock('../src/services/providerPatientService', () => ({
@@ -175,8 +175,8 @@ describe('PatientExportService', () => {
   });
 
   describe('buildFhirBundle', () => {
-    test('creates a collection bundle with correct structure', () => {
-      const bundle = PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
+    test('creates a collection bundle with correct structure', async () => {
+      const bundle = await PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
 
       expect(bundle.resourceType).toBe('Bundle');
       expect(bundle.type).toBe('collection');
@@ -184,8 +184,8 @@ describe('PatientExportService', () => {
       expect(bundle.timestamp).toBeDefined();
     });
 
-    test('includes all resource types in entries', () => {
-      const bundle = PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
+    test('includes all resource types in entries', async () => {
+      const bundle = await PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
 
       const resourceTypes = bundle.entry.map((e) => e.resource.resourceType);
       expect(resourceTypes).toContain('Patient');
@@ -193,8 +193,8 @@ describe('PatientExportService', () => {
       expect(resourceTypes).toContain('Appointment');
     });
 
-    test('entries have fullUrl with urn:uuid format', () => {
-      const bundle = PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
+    test('entries have fullUrl with urn:uuid format', async () => {
+      const bundle = await PatientExportService.buildFhirBundle(mockPatient, mockRecords, mockAppointments);
 
       for (const entry of bundle.entry) {
         expect(entry.fullUrl).toMatch(/^urn:uuid:/);
@@ -203,8 +203,8 @@ describe('PatientExportService', () => {
   });
 
   describe('toFhirPatient', () => {
-    test('maps patient demographics correctly', () => {
-      const resource = PatientExportService.toFhirPatient(mockPatient);
+    test('maps patient demographics correctly', async () => {
+      const resource = await PatientExportService.toFhirPatient(mockPatient);
 
       expect(resource.resourceType).toBe('Patient');
       expect(resource.id).toBe('patient-1');
@@ -214,42 +214,42 @@ describe('PatientExportService', () => {
       expect(resource.gender).toBe('male');
     });
 
-    test('includes email as telecom', () => {
-      const resource = PatientExportService.toFhirPatient(mockPatient);
+    test('includes email as telecom', async () => {
+      const resource = await PatientExportService.toFhirPatient(mockPatient);
 
       expect(resource.telecom).toEqual([
         { system: 'email', value: 'john.doe@example.com' },
       ]);
     });
 
-    test('includes SSN as identifier when decryption succeeds', () => {
-      const resource = PatientExportService.toFhirPatient(mockPatient);
+    test('includes SSN as identifier when decryption succeeds', async () => {
+      const resource = await PatientExportService.toFhirPatient(mockPatient);
 
       expect(resource.identifier).toEqual([
         { system: 'http://hl7.org/fhir/sid/us-ssn', value: '123-45-6789' },
       ]);
     });
 
-    test('omits identifier when SSN decryption fails', () => {
+    test('omits identifier when SSN decryption fails', async () => {
       decrypt.mockImplementation(() => {
-        throw new Error('Decryption failed');
+        return Promise.reject(new Error('Decryption failed'));
       });
 
-      const resource = PatientExportService.toFhirPatient(mockPatient);
+      const resource = await PatientExportService.toFhirPatient(mockPatient);
 
       expect(resource.identifier).toBeUndefined();
     });
 
-    test('omits gender when not present', () => {
+    test('omits gender when not present', async () => {
       const patientNoGender = { ...mockPatient, gender: undefined };
-      const resource = PatientExportService.toFhirPatient(patientNoGender);
+      const resource = await PatientExportService.toFhirPatient(patientNoGender);
 
       expect(resource.gender).toBeUndefined();
     });
 
-    test('omits telecom when email not present', () => {
+    test('omits telecom when email not present', async () => {
       const patientNoEmail = { ...mockPatient, email: undefined };
-      const resource = PatientExportService.toFhirPatient(patientNoEmail);
+      const resource = await PatientExportService.toFhirPatient(patientNoEmail);
 
       expect(resource.telecom).toBeUndefined();
     });

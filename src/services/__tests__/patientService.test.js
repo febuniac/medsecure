@@ -18,8 +18,8 @@ jest.mock('../../models/db', () => {
 
 jest.mock('../providerPatientService');
 jest.mock('../../utils/encryption', () => ({
-  encrypt: jest.fn((val) => `encrypted_${val}`),
-  decrypt: jest.fn((val) => val ? val.replace('encrypted_', '') : val),
+  encrypt: jest.fn((val) => Promise.resolve(`encrypted_${val}`)),
+  decrypt: jest.fn((val) => Promise.resolve(val ? val.replace('encrypted_', '') : val)),
 }));
 
 describe('PatientService', () => {
