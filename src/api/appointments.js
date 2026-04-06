@@ -4,8 +4,8 @@ const { formatErrorResponse } = require('../utils/errorCodes');
 
 router.get('/', async (req, res) => {
   try {
-    const appointments = await AppointmentService.list(req.query, req.user);
-    res.json(appointments);
+    const { data, total, limit, offset } = await AppointmentService.list(req.query, req.user);
+    res.json({ data, pagination: { total, limit, offset } });
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     res.status(status).json(body);
