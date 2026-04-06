@@ -7,21 +7,11 @@ const {
 } = require('../services/backupVerificationScheduler');
 const db = require('../models/db');
 const knex = require('knex');
+const { buildTestDbConfig } = require('../config/database');
 const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
 function getTestDb() {
-  return knex({
-    client: 'pg',
-    connection: {
-      host: process.env.TEST_DB_HOST || process.env.DB_HOST || 'localhost',
-      port: process.env.TEST_DB_PORT || process.env.DB_PORT || 5432,
-      user: process.env.TEST_DB_USER || process.env.DB_USER || 'medsecure',
-      password: process.env.TEST_DB_PASSWORD || process.env.DB_PASSWORD,
-      database: process.env.TEST_DB_NAME || 'medsecure_test_db',
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false
-    },
-    pool: { min: 1, max: 5 }
-  });
+  return knex(buildTestDbConfig());
 }
 
 router.get('/status', (req, res) => {
