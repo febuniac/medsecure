@@ -31,6 +31,7 @@ app.use('/api/v1/appointments', authMiddleware, require('./api/appointments'));
 app.use('/api/v1/prescriptions', authMiddleware, require('./api/prescriptions'));
 app.use('/api/v1/providers', authMiddleware, require('./api/providers'));
 app.use('/api/v1/consent', authMiddleware, require('./api/consent'));
+app.use('/api/v1/image-attachments', authMiddleware, require('./api/imageAttachments'));
 app.use('/api/v1/breach-notifications', authMiddleware, require('./api/breachNotification'));
 app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
 app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
