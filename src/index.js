@@ -4,11 +4,11 @@ const { logger } = require('./utils/logger');
 const { validateEnv } = require('./utils/validateEnv');
 const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
-const authMiddleware = require('./middleware/auth');
 const httpsEnforcement = require('./middleware/httpsEnforcement');
 const { scheduleBackupVerification } = require('./services/backupVerificationScheduler');
 const db = require('./models/db');
 const knex = require('knex');
+const v1Router = require('./api/v1Router');
 
 validateEnv();
 
@@ -19,19 +19,7 @@ app.use(httpsEnforcement);
 app.use(hipaaAudit);
 app.use(breachDetection);
 
-app.use('/api/v1/patients', authMiddleware, require('./api/patients'));
-app.use('/api/v1/records', authMiddleware, require('./api/records'));
-app.use('/api/v1/appointments', authMiddleware, require('./api/appointments'));
-app.use('/api/v1/prescriptions', authMiddleware, require('./api/prescriptions'));
-app.use('/api/v1/providers', authMiddleware, require('./api/providers'));
-app.use('/api/v1/consent', authMiddleware, require('./api/consent'));
-app.use('/api/v1/provider-assignments', authMiddleware, require('./api/providerAssignments'));
-app.use('/api/v1/breach-notifications', authMiddleware, require('./api/breachNotification'));
-app.use('/api/v1/baa-agreements', authMiddleware, require('./api/baaAgreements'));
-app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
-app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
-
-app.use('/api/v1/auth', require('./api/auth'));
+app.use('/api/v1', v1Router);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
