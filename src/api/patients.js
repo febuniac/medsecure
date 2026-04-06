@@ -22,6 +22,19 @@ router.get('/:id/export', async (req, res) => {
     res.status(status).json(body);
   }
 });
+router.get('/mrn/:mrn', async (req, res) => {
+  const { mrn } = req.params;
+  if (!mrn || typeof mrn !== 'string' || mrn.trim().length === 0) {
+    return res.status(400).json({ error: 'Invalid MRN' });
+  }
+  try {
+    const patient = await PatientService.getByMrn(mrn, req.user);
+    res.json(patient);
+  } catch (err) {
+    const { status, body } = sanitizePatientError(err);
+    res.status(status).json(body);
+  }
+});
 router.get('/:id', async (req, res) => {
   const patientId = req.params.id;
   if (!patientId || !/^[0-9]+$/.test(patientId)) {
