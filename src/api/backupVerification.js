@@ -7,6 +7,7 @@ const {
 } = require('../services/backupVerificationScheduler');
 const db = require('../models/db');
 const knex = require('knex');
+const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
 function getTestDb() {
   return knex({
@@ -53,7 +54,7 @@ router.post('/run', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       status: 'error',
-      error: error.message
+      ...formatError(ErrorCodes.INTERNAL_ERROR, error.message)
     });
   }
 });

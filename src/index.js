@@ -1,18 +1,23 @@
 const express = require('express');
 const helmet = require('helmet');
 const { logger } = require('./utils/logger');
+const { validateEnv } = require('./utils/validateEnv');
+const corsMiddleware = require('./middleware/cors');
 const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
-const authMiddleware = require('./middleware/auth');
 const httpsEnforcement = require('./middleware/httpsEnforcement');
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 const { scheduleBackupVerification } = require('./services/backupVerificationScheduler');
 const db = require('./models/db');
 const knex = require('knex');
+const v1Router = require('./api/v1Router');
+
+validateEnv();
 
 const app = express();
 app.use(helmet());
-app.use(express.json({ limit: '50mb' }));
+app.use(corsMiddleware);
+app.use(express.json({ limit: '5mb' }));
 app.use(httpsEnforcement);
 app.use(hipaaAudit);
 app.use(breachDetection);
@@ -29,6 +34,7 @@ app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
 app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
 
 app.use('/api/v1/auth', authLimiter, require('./api/auth'));
+app.use('/api/v1', v1Router);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
@@ -51,6 +57,13 @@ if (process.env.BACKUP_VERIFICATION_ENABLED !== 'false') {
   logger.info({ type: 'BACKUP_VERIFICATION', action: 'enabled', schedule: verificationSchedule });
 }
 
+const { createGracefulShutdown } = require('./utils/gracefulShutdown');
+const { shutdown: gracefulShutdown } = createGracefulShutdown(db);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => logger.info(`MedSecure running on port ${PORT}`));
-module.exports = app;
+const server = app.listen(PORT, () => logger.info(`MedSecure running on port ${PORT}`));
+
+process.on('SIGTERM', () => gracefulShutdown(server, 'SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown(server, 'SIGINT'));
+
+module.exports = { app, server, gracefulShutdown };
