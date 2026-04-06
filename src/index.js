@@ -36,6 +36,7 @@ app.use('/api/v1/image-attachments', authMiddleware, require('./api/imageAttachm
 app.use('/api/v1/breach-notifications', authMiddleware, require('./api/breachNotification'));
 app.use('/fhir/r4', authMiddleware, require('./api/fhir'));
 app.use('/api/v1/backup-verification', authMiddleware, require('./api/backupVerification'));
+app.use('/api/v1/admin', authMiddleware, require('./api/admin'));
 
 app.use('/api/v1/auth', authLimiter, require('./api/auth'));
 app.use('/api/v1', v1Router);
