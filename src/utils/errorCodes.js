@@ -144,10 +144,45 @@ function formatErrorResponse(err) {
   };
 }
 
+/**
+ * Build a sanitized error response safe for patient-related endpoints.
+ *
+ * Known AppError instances (validation, not-found, auth, etc.) are returned
+ * with their original code and message because they never contain PHI.
+ * Unstructured / unexpected errors are replaced with a generic message to
+ * prevent patient data from leaking in error responses (HIPAA).
+ *
+ * @param {Error} err
+ * @returns {{ status: number, body: object }}
+ */
+function sanitizePatientError(err) {
+  if (err instanceof AppError) {
+    return {
+      status: err.status,
+      body: formatError(err.code, err.message, err.details),
+    };
+  }
+
+  // Legacy errors that set .status and .code
+  if (err.code && ErrorStatusMap[err.code]) {
+    return {
+      status: err.status || ErrorStatusMap[err.code],
+      body: formatError(err.code, err.message),
+    };
+  }
+
+  // For any unstructured error, return a generic message to avoid leaking PHI
+  return {
+    status: 500,
+    body: formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to process patient record'),
+  };
+}
+
 module.exports = {
   ErrorCodes,
   ErrorStatusMap,
   AppError,
   formatError,
   formatErrorResponse,
+  sanitizePatientError,
 };

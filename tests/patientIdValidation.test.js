@@ -13,6 +13,10 @@ jest.mock('../src/utils/errorCodes', () => ({
     status: 500,
     body: { error: { code: 'INTERNAL_ERROR', message: err.message } },
   })),
+  sanitizePatientError: jest.fn((err) => ({
+    status: 500,
+    body: { error: { code: 'INTERNAL_ERROR', message: 'Failed to process patient record' } },
+  })),
 }));
 
 const request = require('supertest');

@@ -1,14 +1,14 @@
 const router = require('express').Router();
 const PatientService = require('../services/patientService');
 const PatientExportService = require('../services/patientExportService');
-const { formatErrorResponse } = require('../utils/errorCodes');
+const { sanitizePatientError } = require('../utils/errorCodes');
 
 router.get('/', async (req, res) => {
   try {
     const patients = await PatientService.list(req.query, req.user);
     res.json(patients);
   } catch (err) {
-    const { status, body } = formatErrorResponse(err);
+    const { status, body } = sanitizePatientError(err);
     res.status(status).json(body);
   }
 });
@@ -18,7 +18,7 @@ router.get('/:id/export', async (req, res) => {
     res.set('Content-Type', 'application/fhir+json');
     res.json(bundle);
   } catch (err) {
-    const { status, body } = formatErrorResponse(err);
+    const { status, body } = sanitizePatientError(err);
     res.status(status).json(body);
   }
 });
@@ -31,7 +31,7 @@ router.get('/:id', async (req, res) => {
     const patient = await PatientService.getById(patientId, req.user);
     res.json(patient);
   } catch (err) {
-    const { status, body } = formatErrorResponse(err);
+    const { status, body } = sanitizePatientError(err);
     res.status(status).json(body);
   }
 });
@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
     const patient = await PatientService.create(req.body, req.user);
     res.status(201).json(patient);
   } catch (err) {
-    const { status, body } = formatErrorResponse(err);
+    const { status, body } = sanitizePatientError(err);
     res.status(status).json(body);
   }
 });
@@ -53,7 +53,7 @@ router.put('/:id', async (req, res) => {
     const patient = await PatientService.update(patientId, req.body, req.user);
     res.json(patient);
   } catch (err) {
-    const { status, body } = formatErrorResponse(err);
+    const { status, body } = sanitizePatientError(err);
     res.status(status).json(body);
   }
 });
