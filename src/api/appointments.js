@@ -1,12 +1,14 @@
 const router = require('express').Router();
 const AppointmentService = require('../services/appointmentService');
+const { formatErrorResponse } = require('../utils/errorCodes');
 
 router.get('/', async (req, res) => {
   try {
-    const appointments = await AppointmentService.list(req.query, req.user);
-    res.json(appointments);
+    const { data, total, limit, offset } = await AppointmentService.list(req.query, req.user);
+    res.json({ data, pagination: { total, limit, offset } });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const { status, body } = formatErrorResponse(err);
+    res.status(status).json(body);
   }
 });
 
@@ -15,7 +17,8 @@ router.post('/', async (req, res) => {
     const apt = await AppointmentService.create(req.body, req.user);
     res.status(201).json(apt);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const { status, body } = formatErrorResponse(err);
+    res.status(status).json(body);
   }
 });
 
@@ -24,7 +27,8 @@ router.put('/:id/cancel', async (req, res) => {
     const apt = await AppointmentService.cancel(req.params.id, req.user);
     res.json(apt);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const { status, body } = formatErrorResponse(err);
+    res.status(status).json(body);
   }
 });
 

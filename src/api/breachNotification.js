@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const Joi = require('joi');
 const BreachNotificationService = require('../services/breachNotificationService');
+const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
 // --- Validation Schemas ---
 
@@ -76,12 +77,12 @@ function validate(schema, data) {
 router.post('/', async (req, res) => {
   try {
     const { error, value } = validate(reportBreachSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const breach = await BreachNotificationService.reportBreach(value, req.user);
     res.status(201).json(breach);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to report breach', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to report breach'));
   }
 });
 
@@ -94,7 +95,7 @@ router.get('/', async (req, res) => {
     const breaches = await BreachNotificationService.list(req.query, req.user);
     res.json(breaches);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to list breaches', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to list breaches'));
   }
 });
 
@@ -107,7 +108,7 @@ router.get('/overdue', async (req, res) => {
     const breaches = await BreachNotificationService.getOverdueBreaches(req.user);
     res.json(breaches);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get overdue breaches', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get overdue breaches'));
   }
 });
 
@@ -121,7 +122,7 @@ router.get('/approaching-deadline', async (req, res) => {
     const breaches = await BreachNotificationService.getApproachingDeadlineBreaches(req.user, withinDays);
     res.json(breaches);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get approaching deadline breaches', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get approaching deadline breaches'));
   }
 });
 
@@ -133,12 +134,12 @@ router.get('/annual-summary/:year', async (req, res) => {
   try {
     const year = parseInt(req.params.year);
     if (isNaN(year) || year < 2000 || year > 2100) {
-      return res.status(400).json({ error: 'Invalid year' });
+      return res.status(400).json(formatError(ErrorCodes.INVALID_YEAR, 'Invalid year'));
     }
     const summary = await BreachNotificationService.getAnnualSummary(year, req.user);
     res.json(summary);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get annual summary', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get annual summary'));
   }
 });
 
@@ -149,10 +150,10 @@ router.get('/annual-summary/:year', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const breach = await BreachNotificationService.getById(req.params.id, req.user);
-    if (!breach) return res.status(404).json({ error: 'Breach not found' });
+    if (!breach) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.json(breach);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get breach', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get breach'));
   }
 });
 
@@ -163,16 +164,16 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { error, value } = validate(updateBreachSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const breach = await BreachNotificationService.updateBreach(req.params.id, value, req.user);
-    if (!breach) return res.status(404).json({ error: 'Breach not found' });
+    if (!breach) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.json(breach);
   } catch (err) {
     if (err.message.includes('Invalid status transition')) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json(formatError(ErrorCodes.INVALID_STATUS_TRANSITION, err.message));
     }
-    res.status(500).json({ error: 'Failed to update breach', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to update breach'));
   }
 });
 
@@ -183,13 +184,13 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/risk-assessment', async (req, res) => {
   try {
     const { error, value } = validate(riskAssessmentSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const assessment = await BreachNotificationService.performRiskAssessment(req.params.id, value, req.user);
-    if (!assessment) return res.status(404).json({ error: 'Breach not found' });
+    if (!assessment) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.status(201).json(assessment);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to perform risk assessment', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to perform risk assessment'));
   }
 });
 
@@ -200,10 +201,10 @@ router.post('/:id/risk-assessment', async (req, res) => {
 router.get('/:id/risk-assessment', async (req, res) => {
   try {
     const assessment = await BreachNotificationService.getRiskAssessment(req.params.id, req.user);
-    if (!assessment) return res.status(404).json({ error: 'Breach or assessment not found' });
+    if (!assessment) return res.status(404).json(formatError(ErrorCodes.RISK_ASSESSMENT_NOT_FOUND, 'Breach or assessment not found'));
     res.json(assessment);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get risk assessment', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get risk assessment'));
   }
 });
 
@@ -214,13 +215,13 @@ router.get('/:id/risk-assessment', async (req, res) => {
 router.post('/:id/notify', async (req, res) => {
   try {
     const { error, value } = validate(sendNotificationSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const notification = await BreachNotificationService.sendNotification(req.params.id, value, req.user);
-    if (!notification) return res.status(404).json({ error: 'Breach not found' });
+    if (!notification) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.status(201).json(notification);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to send notification', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to send notification'));
   }
 });
 
@@ -231,10 +232,10 @@ router.post('/:id/notify', async (req, res) => {
 router.get('/:id/notifications', async (req, res) => {
   try {
     const notifications = await BreachNotificationService.getNotifications(req.params.id, req.user);
-    if (!notifications) return res.status(404).json({ error: 'Breach not found' });
+    if (!notifications) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.json(notifications);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get notifications', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get notifications'));
   }
 });
 
@@ -245,13 +246,13 @@ router.get('/:id/notifications', async (req, res) => {
 router.post('/:id/report-hhs', async (req, res) => {
   try {
     const { error, value } = validate(reportToHHSSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const breach = await BreachNotificationService.markAsReported(req.params.id, value, req.user);
-    if (!breach) return res.status(404).json({ error: 'Breach not found' });
+    if (!breach) return res.status(404).json(formatError(ErrorCodes.BREACH_NOT_FOUND, 'Breach not found'));
     res.json(breach);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to report to HHS', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to report to HHS'));
   }
 });
 

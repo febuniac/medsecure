@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Environment files (secrets must be injected at runtime)
+.env
+.env.*
+
+# Test and coverage
+tests
+coverage
+*.test.js
+
+# Logs
+*.log
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Documentation
+README.md
+CONTRIBUTING.md
+docs
+
+# Build artifacts
+dist

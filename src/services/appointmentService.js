@@ -1,21 +1,32 @@
 const db = require('../models/db');
+const { AppError, ErrorCodes } = require('../utils/errorCodes');
 
 class AppointmentService {
   static async list(filters, user) {
-    const query = db('appointments').where({ provider_id: user.provider_id });
+    const parsedLimit = parseInt(filters.limit, 10);
+    const limit = Math.max(1, Math.min(Number.isFinite(parsedLimit) ? parsedLimit : 20, 100));
+    const parsedOffset = parseInt(filters.offset, 10);
+    const offset = Math.max(0, Number.isFinite(parsedOffset) ? parsedOffset : 0);
+
+    const baseQuery = db('appointments').where({ provider_id: user.provider_id });
     if (filters.date) {
-      query.where('appointment_date', filters.date);
+      baseQuery.where('appointment_date', filters.date);
     }
     if (filters.status) {
-      query.where('status', filters.status);
+      baseQuery.where('status', filters.status);
     }
-    return query.orderBy('appointment_date', 'asc');
+
+    const [{ count }] = await baseQuery.clone().count('* as count');
+    const total = parseInt(count, 10);
+    const data = await baseQuery.orderBy('appointment_date', 'asc').limit(limit).offset(offset);
+
+    return { data, total, limit, offset };
   }
 
   static async create(data, user) {
     const appointmentDate = data.appointment_date;
     if (!appointmentDate) {
-      throw Object.assign(new Error('Appointment date is required'), { status: 400 });
+      throw new AppError(ErrorCodes.MISSING_REQUIRED_FIELDS, 'Appointment date is required');
     }
 
     const holiday = await db('holidays')
@@ -23,10 +34,7 @@ class AppointmentService {
       .first();
 
     if (holiday) {
-      throw Object.assign(
-        new Error(`Cannot book appointment on ${appointmentDate}: hospital holiday (${holiday.name})`),
-        { status: 409 }
-      );
+      throw new AppError(ErrorCodes.HOLIDAY_CONFLICT, `Cannot book appointment on ${appointmentDate}: hospital holiday (${holiday.name})`);
     }
 
     data.provider_id = user.provider_id;
@@ -38,7 +46,7 @@ class AppointmentService {
   static async cancel(id, user) {
     const appointment = await db('appointments').where({ id }).first();
     if (!appointment) {
-      throw Object.assign(new Error('Appointment not found'), { status: 404 });
+      throw new AppError(ErrorCodes.APPOINTMENT_NOT_FOUND, 'Appointment not found');
     }
     const [updated] = await db('appointments')
       .where({ id })
