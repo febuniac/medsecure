@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const { logger } = require('./utils/logger');
 const { validateEnv } = require('./utils/validateEnv');
+const corsMiddleware = require('./middleware/cors');
 const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
 const httpsEnforcement = require('./middleware/httpsEnforcement');
@@ -14,6 +15,7 @@ validateEnv();
 
 const app = express();
 app.use(helmet());
+app.use(corsMiddleware);
 app.use(express.json({ limit: '5mb' }));
 app.use(httpsEnforcement);
 app.use(hipaaAudit);
