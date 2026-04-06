@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev
+# Use npm ci when lockfile exists, fall back to npm install
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit=dev; fi
 
 # ---- Stage 2: Build ----
 FROM node:20-alpine AS build
@@ -16,7 +17,7 @@ WORKDIR /app
 
 # Copy package files and install all dependencies (including dev)
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy application source
 COPY . .

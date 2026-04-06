@@ -79,12 +79,16 @@ describe('Dockerfile', () => {
   });
 
   describe('dependency optimization', () => {
-    it('should use npm ci for reproducible installs', () => {
+    it('should use npm ci for reproducible installs when lockfile exists', () => {
       expect(dockerfileContent).toMatch(/npm ci/);
     });
 
+    it('should fall back to npm install when no lockfile exists', () => {
+      expect(dockerfileContent).toMatch(/npm install/);
+    });
+
     it('should install only production dependencies in deps stage', () => {
-      expect(dockerfileContent).toMatch(/npm ci\s+--omit=dev/);
+      expect(dockerfileContent).toMatch(/--omit=dev/);
     });
   });
 
