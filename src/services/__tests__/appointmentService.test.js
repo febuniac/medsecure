@@ -127,18 +127,27 @@ describe('AppointmentService', () => {
   });
 
   describe('list', () => {
-    it('should list appointments for user provider', async () => {
+    it('should list appointments for user provider with pagination', async () => {
       const mockQuery = {
         where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
+        clone: jest.fn(),
       };
+      mockQuery.clone.mockReturnValue({
+        count: jest.fn().mockResolvedValue([{ count: '2' }]),
+      });
 
       db.mockImplementation(() => mockQuery);
 
       const result = await AppointmentService.list({}, mockUser);
       expect(db).toHaveBeenCalledWith('appointments');
       expect(mockQuery.where).toHaveBeenCalledWith({ provider_id: 'provider-1' });
-      expect(result).toHaveLength(2);
+      expect(result.data).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.limit).toBe(20);
+      expect(result.offset).toBe(0);
     });
   });
 

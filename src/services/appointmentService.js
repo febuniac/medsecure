@@ -3,14 +3,24 @@ const { AppError, ErrorCodes } = require('../utils/errorCodes');
 
 class AppointmentService {
   static async list(filters, user) {
-    const query = db('appointments').where({ provider_id: user.provider_id });
+    const parsedLimit = parseInt(filters.limit, 10);
+    const limit = Math.max(1, Math.min(Number.isFinite(parsedLimit) ? parsedLimit : 20, 100));
+    const parsedOffset = parseInt(filters.offset, 10);
+    const offset = Math.max(0, Number.isFinite(parsedOffset) ? parsedOffset : 0);
+
+    const baseQuery = db('appointments').where({ provider_id: user.provider_id });
     if (filters.date) {
-      query.where('appointment_date', filters.date);
+      baseQuery.where('appointment_date', filters.date);
     }
     if (filters.status) {
-      query.where('status', filters.status);
+      baseQuery.where('status', filters.status);
     }
-    return query.orderBy('appointment_date', 'asc');
+
+    const [{ count }] = await baseQuery.clone().count('* as count');
+    const total = parseInt(count, 10);
+    const data = await baseQuery.orderBy('appointment_date', 'asc').limit(limit).offset(offset);
+
+    return { data, total, limit, offset };
   }
 
   static async create(data, user) {
