@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
+const requireAdmin = require('../middleware/requireAdmin');
 
 const v1Router = express.Router();
 
@@ -12,6 +13,7 @@ v1Router.use('/provider-assignments', authMiddleware, require('./providerAssignm
 v1Router.use('/breach-notifications', authMiddleware, require('./breachNotification'));
 v1Router.use('/baa-agreements', authMiddleware, require('./baaAgreements'));
 v1Router.use('/backup-verification', authMiddleware, require('./backupVerification'));
+v1Router.use('/admin', authMiddleware, requireAdmin, require('./admin'));
 v1Router.use('/auth', require('./auth'));
 
 module.exports = v1Router;
