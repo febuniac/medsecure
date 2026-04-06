@@ -11,6 +11,10 @@ jest.mock('../src/services/imageAttachmentService', () => ({
   upload: jest.fn(),
 }));
 
+jest.mock('../src/services/providerPatientService', () => ({
+  verifyAccess: jest.fn().mockResolvedValue(true),
+}));
+
 jest.mock('../src/utils/logger', () => ({
   logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
 }));
@@ -150,7 +154,7 @@ describe('RecordService', () => {
   });
 
   describe('getByPatient', () => {
-    it('should return records with image attachment references', async () => {
+    it('should return paginated records with image attachment references', async () => {
       const mockRecords = [
         { id: 'record-1', patient_id: 'patient-1' },
         { id: 'record-2', patient_id: 'patient-1' },
@@ -158,7 +162,10 @@ describe('RecordService', () => {
 
       const recordQuery = {
         where: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockResolvedValue(mockRecords),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValue(mockRecords),
+        count: jest.fn().mockResolvedValue([{ count: '2' }]),
       };
 
       const attachmentQuery = {
@@ -174,10 +181,69 @@ describe('RecordService', () => {
 
       const result = await RecordService.getByPatient('patient-1', mockUser);
 
-      expect(result).toHaveLength(2);
-      result.forEach((record) => {
+      expect(result.data).toHaveLength(2);
+      expect(result.pagination).toBeDefined();
+      expect(result.pagination.page).toBe(1);
+      expect(result.pagination.limit).toBe(20);
+      expect(result.pagination.total).toBe(2);
+      expect(result.pagination.totalPages).toBe(1);
+      result.data.forEach((record) => {
         expect(record.image_attachments).toBeDefined();
       });
+    });
+
+    it('should apply custom page and limit parameters', async () => {
+      const mockRecords = [
+        { id: 'record-3', patient_id: 'patient-1' },
+      ];
+
+      const recordQuery = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValue(mockRecords),
+        count: jest.fn().mockResolvedValue([{ count: '15' }]),
+      };
+
+      const attachmentQuery = {
+        where: jest.fn().mockReturnThis(),
+        select: jest.fn().mockResolvedValue([]),
+      };
+
+      db.mockImplementation((table) => {
+        if (table === 'medical_records') return recordQuery;
+        if (table === 'image_attachments') return attachmentQuery;
+        return {};
+      });
+
+      const result = await RecordService.getByPatient('patient-1', mockUser, { page: 2, limit: 5 });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.limit).toBe(5);
+      expect(result.pagination.total).toBe(15);
+      expect(result.pagination.totalPages).toBe(3);
+    });
+
+    it('should return empty data array with correct pagination when no records exist', async () => {
+      const recordQuery = {
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        offset: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue([{ count: '0' }]),
+      };
+
+      db.mockImplementation((table) => {
+        if (table === 'medical_records') return recordQuery;
+        return {};
+      });
+
+      const result = await RecordService.getByPatient('patient-1', mockUser, { page: 1, limit: 10 });
+
+      expect(result.data).toHaveLength(0);
+      expect(result.pagination.total).toBe(0);
+      expect(result.pagination.totalPages).toBe(0);
     });
   });
 

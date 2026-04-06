@@ -8,10 +8,34 @@ const { logger } = require('../utils/logger');
 const IMAGE_BLOB_FIELDS = ['image_data', 'attachment_data', 'file_data', 'image', 'dicom_data'];
 
 class RecordService {
-  static async getByPatient(patientId, user) {
+  static async getByPatient(patientId, user, { page = 1, limit = 20 } = {}) {
     await ProviderPatientService.verifyAccess(user, patientId);
-    const records = await db('medical_records').where({ patient_id: patientId }).orderBy('date', 'desc');
-    return Promise.all(records.map(record => RecordService._attachImageReferences(record)));
+
+    const offset = (page - 1) * limit;
+
+    const [records, [{ count: totalCount }]] = await Promise.all([
+      db('medical_records')
+        .where({ patient_id: patientId })
+        .orderBy('date', 'desc')
+        .limit(limit)
+        .offset(offset),
+      db('medical_records')
+        .where({ patient_id: patientId })
+        .count('* as count'),
+    ]);
+
+    const total = parseInt(totalCount, 10);
+    const data = await Promise.all(records.map(record => RecordService._attachImageReferences(record)));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   static async getById(id, user) {

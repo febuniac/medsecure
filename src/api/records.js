@@ -2,10 +2,17 @@ const router = require('express').Router();
 const RecordService = require('../services/recordService');
 const { formatErrorResponse } = require('../utils/errorCodes');
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
 router.get('/patient/:patientId', async (req, res) => {
   try {
-    const records = await RecordService.getByPatient(req.params.patientId, req.user);
-    res.json(records);
+    const page = Math.max(1, parseInt(req.query.page, 10) || DEFAULT_PAGE);
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(req.query.limit, 10) || DEFAULT_LIMIT));
+
+    const result = await RecordService.getByPatient(req.params.patientId, req.user, { page, limit });
+    res.json(result);
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
     res.status(status).json(body);
