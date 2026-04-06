@@ -1,13 +1,12 @@
 const router = require('express').Router();
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const db = require('../models/db');
 const { logger } = require('../utils/logger');
+const { generateToken } = require('../middleware/auth');
 const { validatePassword } = require('../utils/passwordValidator');
 const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
 const SALT_ROUNDS = 12;
-const SESSION_EXPIRY = '15m'; // HIPAA-compliant session timeout
 
 router.post('/register', async (req, res) => {
   try {
@@ -62,11 +61,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json(formatError(ErrorCodes.INVALID_CREDENTIALS, 'Invalid credentials'));
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: SESSION_EXPIRY }
-    );
+    const token = generateToken(user);
 
     logger.info({ type: 'AUTH', action: 'login', userId: user.id, email });
 
@@ -78,4 +73,3 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
-module.exports.SESSION_EXPIRY = SESSION_EXPIRY;
