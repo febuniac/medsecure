@@ -44,6 +44,13 @@ if (process.env.BACKUP_VERIFICATION_ENABLED !== 'false') {
   logger.info({ type: 'BACKUP_VERIFICATION', action: 'enabled', schedule: verificationSchedule });
 }
 
+const { createGracefulShutdown } = require('./utils/gracefulShutdown');
+const { shutdown: gracefulShutdown } = createGracefulShutdown(db);
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => logger.info(`MedSecure running on port ${PORT}`));
-module.exports = app;
+const server = app.listen(PORT, () => logger.info(`MedSecure running on port ${PORT}`));
+
+process.on('SIGTERM', () => gracefulShutdown(server, 'SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown(server, 'SIGINT'));
+
+module.exports = { app, server, gracefulShutdown };
