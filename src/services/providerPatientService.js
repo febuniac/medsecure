@@ -1,4 +1,5 @@
 const db = require('../models/db');
+const { AppError, ErrorCodes } = require('../utils/errorCodes');
 
 class ProviderPatientService {
   /**
@@ -22,9 +23,7 @@ class ProviderPatientService {
     }
     const assigned = await this.isAssigned(user.provider_id, patientId);
     if (!assigned) {
-      const error = new Error('Access denied: provider not assigned to this patient');
-      error.status = 403;
-      throw error;
+      throw new AppError(ErrorCodes.ACCESS_DENIED, 'Access denied: provider not assigned to this patient');
     }
     return true;
   }
@@ -35,9 +34,7 @@ class ProviderPatientService {
    */
   static async assign(data, user) {
     if (user.role !== 'admin') {
-      const error = new Error('Only administrators can manage provider-patient assignments');
-      error.status = 403;
-      throw error;
+      throw new AppError(ErrorCodes.ADMIN_ONLY, 'Only administrators can manage provider-patient assignments');
     }
 
     const existing = await db('provider_patient_assignments')
@@ -66,9 +63,7 @@ class ProviderPatientService {
    */
   static async revoke(data, user) {
     if (user.role !== 'admin') {
-      const error = new Error('Only administrators can manage provider-patient assignments');
-      error.status = 403;
-      throw error;
+      throw new AppError(ErrorCodes.ADMIN_ONLY, 'Only administrators can manage provider-patient assignments');
     }
 
     const [updated] = await db('provider_patient_assignments')
@@ -77,9 +72,7 @@ class ProviderPatientService {
       .returning('*');
 
     if (!updated) {
-      const error = new Error('Assignment not found');
-      error.status = 404;
-      throw error;
+      throw new AppError(ErrorCodes.ASSIGNMENT_NOT_FOUND, 'Assignment not found');
     }
     return updated;
   }

@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const Joi = require('joi');
 const BaaAgreementService = require('../services/baaAgreementService');
+const { ErrorCodes, formatError } = require('../utils/errorCodes');
 
 // --- Validation Schemas ---
 
@@ -50,12 +51,12 @@ function validate(schema, data) {
 router.post('/', async (req, res) => {
   try {
     const { error, value } = validate(createBaaSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const agreement = await BaaAgreementService.create(value, req.user);
     res.status(201).json(agreement);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create BAA agreement', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to create BAA agreement'));
   }
 });
 
@@ -68,7 +69,7 @@ router.get('/', async (req, res) => {
     const agreements = await BaaAgreementService.list(req.query, req.user);
     res.json(agreements);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to list BAA agreements', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to list BAA agreements'));
   }
 });
 
@@ -82,7 +83,7 @@ router.get('/expiring', async (req, res) => {
     const agreements = await BaaAgreementService.getExpiring(req.user, withinDays);
     res.json(agreements);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get expiring BAA agreements', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get expiring BAA agreements'));
   }
 });
 
@@ -95,7 +96,7 @@ router.get('/expired', async (req, res) => {
     const agreements = await BaaAgreementService.getExpired(req.user);
     res.json(agreements);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get expired BAA agreements', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get expired BAA agreements'));
   }
 });
 
@@ -108,7 +109,7 @@ router.get('/summary', async (req, res) => {
     const summary = await BaaAgreementService.getSummary(req.user);
     res.json(summary);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get BAA summary', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get BAA summary'));
   }
 });
 
@@ -119,10 +120,10 @@ router.get('/summary', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const agreement = await BaaAgreementService.getById(req.params.id, req.user);
-    if (!agreement) return res.status(404).json({ error: 'BAA agreement not found' });
+    if (!agreement) return res.status(404).json(formatError(ErrorCodes.BAA_NOT_FOUND, 'BAA agreement not found'));
     res.json(agreement);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to get BAA agreement', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to get BAA agreement'));
   }
 });
 
@@ -133,13 +134,13 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { error, value } = validate(updateBaaSchema, req.body);
-    if (error) return res.status(400).json({ error: 'Validation failed', details: error });
+    if (error) return res.status(400).json(formatError(ErrorCodes.VALIDATION_FAILED, 'Validation failed', error));
 
     const agreement = await BaaAgreementService.update(req.params.id, value, req.user);
-    if (!agreement) return res.status(404).json({ error: 'BAA agreement not found' });
+    if (!agreement) return res.status(404).json(formatError(ErrorCodes.BAA_NOT_FOUND, 'BAA agreement not found'));
     res.json(agreement);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update BAA agreement', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to update BAA agreement'));
   }
 });
 
@@ -150,10 +151,10 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/terminate', async (req, res) => {
   try {
     const agreement = await BaaAgreementService.terminate(req.params.id, req.user);
-    if (!agreement) return res.status(404).json({ error: 'BAA agreement not found' });
+    if (!agreement) return res.status(404).json(formatError(ErrorCodes.BAA_NOT_FOUND, 'BAA agreement not found'));
     res.json(agreement);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to terminate BAA agreement', message: err.message });
+    res.status(500).json(formatError(ErrorCodes.INTERNAL_ERROR, 'Failed to terminate BAA agreement'));
   }
 });
 

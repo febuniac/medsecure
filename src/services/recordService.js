@@ -1,5 +1,6 @@
 const db = require('../models/db');
 const ProviderPatientService = require('./providerPatientService');
+const { AppError, ErrorCodes } = require('../utils/errorCodes');
 
 class RecordService {
   static async getByPatient(patientId, user) {
@@ -9,9 +10,7 @@ class RecordService {
   static async getById(id, user) {
     const record = await db('medical_records').where({ id }).first();
     if (!record) {
-      const error = new Error('Record not found');
-      error.status = 404;
-      throw error;
+      throw new AppError(ErrorCodes.RECORD_NOT_FOUND, 'Record not found');
     }
     await ProviderPatientService.verifyAccess(user, record.patient_id);
     return record;

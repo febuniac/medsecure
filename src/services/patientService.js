@@ -1,6 +1,7 @@
 const db = require('../models/db');
 const { encrypt, decrypt } = require('../utils/encryption');
 const ProviderPatientService = require('./providerPatientService');
+const { AppError, ErrorCodes } = require('../utils/errorCodes');
 
 class PatientService {
   static async list(filters, user) {
@@ -29,9 +30,7 @@ class PatientService {
     await ProviderPatientService.verifyAccess(user, id);
     const [updated] = await db('patients').where({ id }).update(data).returning('*');
     if (!updated) {
-      const error = new Error('Patient not found');
-      error.status = 404;
-      throw error;
+      throw new AppError(ErrorCodes.PATIENT_NOT_FOUND, 'Patient not found');
     }
     return updated;
   }
