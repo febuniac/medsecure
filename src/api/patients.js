@@ -23,8 +23,12 @@ router.get('/:id/export', async (req, res) => {
   }
 });
 router.get('/:id', async (req, res) => {
+  const patientId = req.params.id;
+  if (!patientId || !/^[0-9]+$/.test(patientId)) {
+    return res.status(400).json({ error: 'Invalid patient ID' });
+  }
   try {
-    const patient = await PatientService.getById(req.params.id, req.user);
+    const patient = await PatientService.getById(patientId, req.user);
     res.json(patient);
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
@@ -41,8 +45,12 @@ router.post('/', async (req, res) => {
   }
 });
 router.put('/:id', async (req, res) => {
+  const patientId = req.params.id;
+  if (!patientId || !/^[0-9]+$/.test(patientId)) {
+    return res.status(400).json({ error: 'Invalid patient ID' });
+  }
   try {
-    const patient = await PatientService.update(req.params.id, req.body, req.user);
+    const patient = await PatientService.update(patientId, req.body, req.user);
     res.json(patient);
   } catch (err) {
     const { status, body } = formatErrorResponse(err);
