@@ -7,6 +7,7 @@ const hipaaAudit = require('./middleware/hipaaAudit');
 const breachDetection = require('./middleware/breachDetection');
 const httpsEnforcement = require('./middleware/httpsEnforcement');
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const correlationId = require('./middleware/correlationId');
 const { scheduleBackupVerification } = require('./services/backupVerificationScheduler');
 const db = require('./models/db');
 const knex = require('knex');
@@ -16,6 +17,7 @@ validateEnv();
 
 const app = express();
 app.use(securityHeaders());
+app.use(correlationId);
 app.use(corsMiddleware);
 app.use(express.json({ limit: '5mb' }));
 app.use(httpsEnforcement);
